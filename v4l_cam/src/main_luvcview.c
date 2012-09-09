@@ -443,7 +443,7 @@ int main(int argc, char *argv[])
 
     /* if we're supposed to read the control settings from a configfile, do that now */
     if(readconfigfile)
-        load_controls(videoIn->fd);
+        load_controls(videoIn->fd, "luvcview.cfg");
 
     pscreen =
         SDL_SetVideoMode(videoIn->width, videoIn->height + 32, 0,
@@ -866,7 +866,7 @@ static int eventThread(void *data)
                 break;
             case A_SAVE:
                 printf("Save controls\n");
-                save_controls(videoIn->fd);
+                save_controls(videoIn->fd, );
                 break;
             case A_LOAD:
                 printf("load controls\n");

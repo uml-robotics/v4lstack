@@ -39,22 +39,12 @@ add_definitions(-DUSE_SDL -O2 -DLINUX -DVERSION=\\"0.2.6-5\\" -I -I/usr/include/
 include_directories(include)
 
 set(UVC_SOURCES 
-  src/luvcview/avilib.c
   src/luvcview/color.c
-  src/luvcview/gui.c
   src/luvcview/utils.c
   src/luvcview/v4l2uvc.c)
 
 add_library(uvc SHARED ${UVC_SOURCES})
 target_link_libraries(uvc m SDL v4l2)
-
-
-add_executable(luvcview src/main_luvcview.c)
-target_link_libraries(luvcview  uvc)
-
-rosbuild_add_executable(opencv_view src/main_opencv_view.cpp)
-target_link_libraries(opencv_view   m v4l2 uvc )
-
 
 rosbuild_add_executable(v4r_cam src/v4l_cam/v4l_cam_node.cpp src/v4l_cam/v4l_cam.cpp src/v4l_cam/generate_dynamic_reconfigure.cpp)
 target_link_libraries(v4r_cam m v4l2 uvc)

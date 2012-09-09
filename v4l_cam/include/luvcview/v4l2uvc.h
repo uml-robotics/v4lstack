@@ -30,7 +30,6 @@
 #include <sys/mman.h>
 #include <sys/select.h>
 #include <linux/videodev2.h>
-#include "avilib.h"
 
 #include "uvcvideo.h"
 #include "dynctrl-logitech.h"
@@ -74,8 +73,6 @@ struct vdIn {
     FILE *captureFile;
     unsigned int framesWritten;
     unsigned int bytesWritten;
-    avi_t *avifile;
-    char *avifilename;
     int framecount;
     int recordstart;
     int recordtime;
@@ -84,8 +81,8 @@ int
 init_videoIn(struct vdIn *vd, char *device, int width, int height, float fps,
 	     int format, int grabmethod, char *avifilename);
 int enum_controls(int vd);
-int save_controls(int vd);
-int load_controls(int vd);
+int save_controls(int vd, const char* filename);
+int load_controls(int vd, const char* filename);
 	     
 int uvcGrab(struct vdIn *vd);
 int close_v4l2(struct vdIn *vd);

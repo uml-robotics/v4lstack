@@ -122,9 +122,6 @@ init_videoIn(struct vdIn *vd, char *device, int width, int height, float fps,
     snprintf(vd->videodevice, 12, "%s", device);
 	printf("Device information:\n");
 	printf("  Device path:  %s\n", vd->videodevice);
-    vd->toggleAvi = 0;
-    vd->avifile = NULL;
-    vd->avifilename = avifilename;
     vd->recordtime = 0;
     vd->framecount = 0;
     vd->recordstart = 0;
@@ -262,14 +259,14 @@ int enum_controls(int vd) //struct vdIn *vd)
  fatal_controls:
   return -1;  
 }
-int save_controls(int vd)
+int save_controls(int vd, const char* filename)
 { 
   struct v4l2_queryctrl queryctrl;
   struct v4l2_control   control_s;
   FILE *configfile;
   memset (&queryctrl, 0, sizeof (queryctrl));
   memset (&control_s, 0, sizeof (control_s));
-  configfile = fopen("luvcview.cfg", "w");
+  configfile = fopen(filename, "w");
   if ( configfile == NULL) {
     perror("saving configfile luvcview.cfg failed");
   }
@@ -321,12 +318,12 @@ int save_controls(int vd)
 }
 
 
-int load_controls(int vd) //struct vdIn *vd)
+int load_controls(int vd, const char* filename) //struct vdIn *vd)
 {
   struct v4l2_control   control;
   FILE *configfile;
   memset (&control, 0, sizeof (control));
-  configfile = fopen("luvcview.cfg", "r");
+  configfile = fopen(filename, "r");
   if ( configfile == NULL) {
     perror("configfile luvcview.cfg open failed");
   }
@@ -645,29 +642,6 @@ end_capture:
 	    return 0;
         }
 	memcpy(vd->tmpbuffer, vd->mem[vd->buf.index],vd->buf.bytesused);
-	 /* avi recording is toggled on */
-    if (vd->toggleAvi) {
-        /* if vd->avifile is NULL, then we need to initialize it */
-        if (vd->avifile == NULL) {
-            vd->avifile = AVI_open_output_file(vd->avifilename);
-
-            /* if avifile is NULL, there was an error */
-            if (vd->avifile == NULL ) {
-                fprintf(stderr,"Error opening avifile %s\n",vd->avifilename);
-            }
-            else {
-                /* we default the fps to 15, we'll reset it on close */
-                AVI_set_video(vd->avifile, vd->width, vd->height,
-                    15, "MJPG");
-                printf("recording to %s\n",vd->avifilename);
-            }
-        } else {
-        /* if we have a valid avifile, record the frame to it */
-            AVI_write_frame(vd->avifile, vd->tmpbuffer,
-                vd->buf.bytesused, vd->framecount);
-            vd->framecount++;
-        }
-    }
 	if (jpeg_decode(&vd->framebuffer, vd->tmpbuffer, &vd->width,
 	     &vd->height) < 0) {
 	    printf("jpeg decode errors\n");
