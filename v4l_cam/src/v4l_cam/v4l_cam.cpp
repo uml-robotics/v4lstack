@@ -448,3 +448,4 @@ void V4LCam::detectControlEnties()
         v4lgetInfo(controlEntries_[i]);
     }
 }
+

@@ -48,16 +48,16 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void V4RCamNode::callbackParameters(luvc::CameraParametersConfig &config, uint32_t level)
+void V4RCamNode::callbackParameters(v4l_cam::CameraParametersConfig &config, uint32_t level)
 {
     readV4lParams();
 	
-    if(update_dynamic_reconfigure_ != config.update_dynamic_reconfigure) {
-	  if(config.update_dynamic_reconfigure){
-        updateDynamicReconfigureFile();
+    if(generate_dynamic_reconfigure_ != config.generate_dynamic_reconfigure) {
+	  if(config.generate_dynamic_reconfigure){
+        updateDynamicReconfigureFile(config.dynamic_reconfigure_file.c_str());
         ROS_INFO("dynamic reconfigure file updated");
 	  }
-	  update_dynamic_reconfigure_ = config.update_dynamic_reconfigure;
+	  generate_dynamic_reconfigure_ = config.generate_dynamic_reconfigure;
     }
     if(show_camera_image_ != config.show_camera_image) {
         if(config.show_camera_image) {
@@ -75,7 +75,7 @@ V4RCamNode::~V4RCamNode()
 }
 
 V4RCamNode::V4RCamNode(ros::NodeHandle &n)
-    : n_(n), n_param_("~"), imageTransport_(n_), update_dynamic_reconfigure_(false), show_camera_image_(false)
+    : n_(n), n_param_("~"), imageTransport_(n_), generate_dynamic_reconfigure_(false), show_camera_image_(false)
 {
     cameraPublisher_ = imageTransport_.advertiseCamera("image_raw", 1);
     readInitParams();
@@ -85,7 +85,6 @@ V4RCamNode::V4RCamNode(ros::NodeHandle &n)
     for(unsigned int  i = 0; i  < controlEntries_.size(); i++) {
         ROS_INFO_STREAM(controlEntries_[i]->getQueryCtrlInfo());
     }
-    updateDynamicReconfigureFile();
     reconfigureFnc_ = boost::bind(&V4RCamNode::callbackParameters, this,  _1, _2);
     reconfigureServer_.setCallback(reconfigureFnc_);
     readV4lParams();

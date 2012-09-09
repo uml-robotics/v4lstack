@@ -36,24 +36,23 @@ public:
     V4RCamNode(ros::NodeHandle &n);
     ~V4RCamNode();
     void publishCamera();
-	void callbackParameters(luvc::CameraParametersConfig &config, uint32_t level);
+	void callbackParameters(v4l_cam::CameraParametersConfig &config, uint32_t level);
 private:
     ros::NodeHandle n_;
     ros::NodeHandle n_param_;
     image_transport::ImageTransport  imageTransport_;
 	image_transport::CameraPublisher cameraPublisher_;
-    dynamic_reconfigure::Server<luvc::CameraParametersConfig> reconfigureServer_;
-    dynamic_reconfigure::Server<luvc::CameraParametersConfig>::CallbackType reconfigureFnc_;
+    dynamic_reconfigure::Server<v4l_cam::CameraParametersConfig> reconfigureServer_;
+    dynamic_reconfigure::Server<v4l_cam::CameraParametersConfig>::CallbackType reconfigureFnc_;
     sensor_msgs::CameraInfo cameraInfo_;
     sensor_msgs::Image cameraImage_;
-	luvc::CameraParametersConfig currentParamers_;
+	bool generate_dynamic_reconfigure_;
+	bool show_camera_image_;
+    boost::thread showCameraImageThread_;
 private:
     void readInitParams();   
     void readV4lParams();     
     void loopCamera();
-	bool update_dynamic_reconfigure_;
-	bool show_camera_image_;
-    boost::thread showCameraImageThread_;
     void showCameraImage();
 	
     /**
@@ -80,7 +79,7 @@ private:
     /**
      * generates a new reconfigure file
      **/
-    void updateDynamicReconfigureFile() const;
+    void updateDynamicReconfigureFile(const char* filename) const;
 };
 
 #endif // V4R_CAM_NODE_H
