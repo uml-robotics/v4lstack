@@ -1,7 +1,9 @@
 <package>
   <description brief="luvc">
-     v4l camera driver, based on the luvcview package. This package detects the supported contros of your usb camera and generates a dynamic reconfigure interface.
-	 The control parmeters like brigthness, ... can be saved and loaded during runtime via the dynamic reconfigure interface.
+v4l camera driver, based on the luvcview package. 
+This package detects the supported controls of your USB camera and generates a dynamic reconfigure interface.
+The control parameters like brightness, ... can be saved and loaded during runtime via the dynamic reconfigure interface.
+Tested are the Logitech 9000pro and Logitech sphere. Even the focus/pan tilt can be controlled via the dynamic reconfigure interface.
   </description>
   <author>Markus Bader</author>
   <license>BSD</license>
