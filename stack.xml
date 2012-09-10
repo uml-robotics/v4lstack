@@ -1,0 +1,8 @@
+<stack>
+  <description brief="v4lstack">v4lstack</description>
+  <author>Maintained by Markus Bader</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/v4lstack</url>
+  <depend stack="ros" />
+</stack>
