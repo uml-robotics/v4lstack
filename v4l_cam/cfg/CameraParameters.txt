@@ -1,0 +1,23 @@
+id         value      # luvcview control settings configuration file
+9963776    128        # name:Brightness                       type:1 min:0     max:255   step:1     def:128
+9963777    32         # name:Contrast                         type:1 min:0     max:255   step:1     def:32
+9963778    32         # name:Saturation                       type:1 min:0     max:255   step:1     def:32
+9963788    1          # name:White Balance Temperature, Auto  type:2 min:0     max:1     step:1     def:1
+9963795    166        # name:Gain                             type:1 min:0     max:255   step:1     def:0
+9963800    2          # name:Power Line Frequency             type:3 min:0     max:2     step:1     def:2
+9963802    5275       # name:White Balance Temperature        type:1 min:0     max:10000 step:10    def:4000
+9963803    224        # name:Sharpness                        type:1 min:0     max:255   step:1     def:224
+9963804    1          # name:Backlight Compensation           type:1 min:0     max:2     step:1     def:1
+10094849   3          # name:Exposure, Auto                   type:3 min:0     max:3     step:1     def:3
+10094850   305        # name:Exposure (Absolute)              type:1 min:1     max:10000 step:1     def:166
+10094851   0          # name:Exposure, Auto Priority          type:2 min:0     max:1     step:1     def:0
+10094852   0          # name:Pan (relative)                   type:1 min:-4480 max:4480  step:0     def:0
+10094853   0          # name:Tilt (relative)                  type:1 min:-1920 max:1920  step:0     def:0
+10094854   0          # name:Pan Reset                        type:1 min:0     max:1     step:1     def:0
+10094855   0          # name:Tilt Reset                       type:1 min:0     max:1     step:0     def:0
+168062211  0          # name:Pan/tilt Reset                   type:1 min:0     max:3     step:1     def:0
+168062212  0          # name:Focus                            type:1 min:0     max:255   step:1     def:0
+168062213  3          # name:LED1 Mode                        type:1 min:0     max:132   step:1     def:3
+168062214  0          # name:LED1 Frequency                   type:1 min:0     max:255   step:1     def:0
+168062321  0          # name:Disable video processing         type:2 min:0     max:1     step:1     def:0
+168062322  0          # name:Raw bits per pixel               type:1 min:0     max:1     step:1     def:0
