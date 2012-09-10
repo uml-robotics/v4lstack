@@ -75,7 +75,7 @@ V4LCam::V4LCam()
     mutexImage_.unlock();
 }
 
-bool V4LCam::initCamera()
+V4LCam::FD V4LCam::initCamera()
 {
     pVideoIn_ = (struct vdIn *) calloc(1, sizeof(struct vdIn));
     if(init_videoIn(pVideoIn_, (char *) videoDevice_.c_str(), width_, height_, fps_, format_, grabmethod_, (char *) aviFilename_.c_str()) < 0)
@@ -83,11 +83,11 @@ bool V4LCam::initCamera()
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     if(uvcGrab(pVideoIn_) < 0) {
         printf("Error grabbing first image\n");
-        return false;
+        return 0;
     }
     initLut();
     gettimeofday(&timeLastFrame_, NULL);
-    return true;
+    return pVideoIn_->fd;
 }
 
 
@@ -415,7 +415,7 @@ bool V4LCam::ControlEntry::hasInfoMsg() const
     return !info_msg.str().empty();
 };
 
-void V4LCam::detectControlEnties()
+std::vector<V4LCam::ControlEntryPtr > &V4LCam::detectControlEnties()
 {
     v4l2_queryctrl queryctrl;
 
@@ -447,5 +447,6 @@ void V4LCam::detectControlEnties()
     for(unsigned int i = 0; i < controlEntries_.size(); i++) {
         v4lgetInfo(controlEntries_[i]);
     }
+    return controlEntries_;
 }
 

@@ -39,6 +39,7 @@ class V4LCam
 public:
     static const int OK = 0;
     static const int ERROR = 1;
+	typedef int FD;
     typedef boost::shared_ptr<v4l2_control> v4l2_controlPtr;
     class ControlEntry
     {
@@ -77,8 +78,9 @@ protected:
     double durationLastFrame_;
     boost::interprocess::interprocess_mutex mutexImage_;
     std::vector<ControlEntryPtr > controlEntries_;
-    bool initCamera();
-
+	
+public:
+    FD initCamera();
 
     /// v4lcontrols
 
@@ -119,7 +121,7 @@ protected:
      **/
     bool isBlackListed(int control);
 
-    void detectControlEnties();
+    std::vector<ControlEntryPtr > &detectControlEnties();
     void save_controls();
 
 

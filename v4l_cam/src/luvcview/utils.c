@@ -958,36 +958,6 @@ inline static void idct(int *in, int *out, int *quant, long off, int max)
 
 }
 
-static unsigned char zig[64] = {
-    0, 1, 5, 6, 14, 15, 27, 28,
-    2, 4, 7, 13, 16, 26, 29, 42,
-    3, 8, 12, 17, 25, 30, 41, 43,
-    9, 11, 18, 24, 31, 40, 44, 53,
-    10, 19, 23, 32, 39, 45, 52, 54,
-    20, 22, 33, 38, 46, 51, 55, 60,
-    21, 34, 37, 47, 50, 56, 59, 61,
-    35, 36, 48, 49, 57, 58, 62, 63
-};
-
-static PREC aaidct[8] = {
-    IFIX(0.3535533906), IFIX(0.4903926402),
-    IFIX(0.4619397663), IFIX(0.4157348062),
-    IFIX(0.3535533906), IFIX(0.2777851165),
-    IFIX(0.1913417162), IFIX(0.0975451610)
-};
-
-
-static void idctqtab(qin, qout)
-unsigned char *qin;
-PREC *qout;
-{
-    int i, j;
-
-    for (i = 0; i < 8; i++)
-	for (j = 0; j < 8; j++)
-	    qout[zig[i * 8 + j]] = qin[zig[i * 8 + j]] *
-		IMULT(aaidct[i], aaidct[j]);
-}
 
 #define  FOUR_TWO_TWO 2		//Y00 Cb Y01 Cr
 
@@ -1202,6 +1172,37 @@ static void yuv400pto422(int * out,unsigned char *pic,int width)
 	}
     
 }
+static unsigned char zig[64] = {
+    0, 1, 5, 6, 14, 15, 27, 28,
+    2, 4, 7, 13, 16, 26, 29, 42,
+    3, 8, 12, 17, 25, 30, 41, 43,
+    9, 11, 18, 24, 31, 40, 44, 53,
+    10, 19, 23, 32, 39, 45, 52, 54,
+    20, 22, 33, 38, 46, 51, 55, 60,
+    21, 34, 37, 47, 50, 56, 59, 61,
+    35, 36, 48, 49, 57, 58, 62, 63
+};
+
+static PREC aaidct[8] = {
+    IFIX(0.3535533906), IFIX(0.4903926402),
+    IFIX(0.4619397663), IFIX(0.4157348062),
+    IFIX(0.3535533906), IFIX(0.2777851165),
+    IFIX(0.1913417162), IFIX(0.0975451610)
+};
+
+
+static void idctqtab(qin, qout)
+unsigned char *qin;
+PREC *qout;
+{
+    int i, j;
+
+    for (i = 0; i < 8; i++)
+	for (j = 0; j < 8; j++)
+	    qout[zig[i * 8 + j]] = qin[zig[i * 8 + j]] *
+		IMULT(aaidct[i], aaidct[j]);
+}
+
 
 int 
 is_huffman(unsigned char *buf)

@@ -51,14 +51,6 @@ int main(int argc, char **argv)
 void V4RCamNode::callbackParameters(v4l_cam::CameraParametersConfig &config, uint32_t level)
 {
     readV4lParams();
-	
-    if(generate_dynamic_reconfigure_ != config.generate_dynamic_reconfigure) {
-	  if(config.generate_dynamic_reconfigure){
-        updateDynamicReconfigureFile(config.dynamic_reconfigure_file.c_str());
-        ROS_INFO("dynamic reconfigure file updated");
-	  }
-	  generate_dynamic_reconfigure_ = config.generate_dynamic_reconfigure;
-    }
     if(show_camera_image_ != config.show_camera_image) {
         if(config.show_camera_image) {
             showCameraImageThread_ = boost::thread(&V4RCamNode::showCameraImage, this);

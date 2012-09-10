@@ -28,7 +28,6 @@
 #include <libv4l2.h>
 
 #include "luvcview/v4l2uvc.h"
-#include "luvcview/utils.h"
 
 #define ARRAY_SIZE(a)		(sizeof(a) / sizeof((a)[0]))
 #define FOURCC_FORMAT		"%c%c%c%c"
