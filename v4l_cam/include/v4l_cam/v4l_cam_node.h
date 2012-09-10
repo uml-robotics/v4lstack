@@ -33,9 +33,15 @@
 class V4RCamNode : public V4LCam
 {
 public:
+  static const int CONVERT_RAW = 0;
+  static const int CONVERT_YUV422toRGB = 1;
+  static const int CONVERT_YUV422toBGR = 2;
+  static const int CONVERT_YUV422toGray = 3;
+  
     V4RCamNode(ros::NodeHandle &n);
     ~V4RCamNode();
     void publishCamera();
+    void processQueue();
 	void callbackParameters(v4l_cam::CameraParametersConfig &config, uint32_t level);
 private:
     ros::NodeHandle n_;
@@ -52,8 +58,12 @@ private:
 private:
     void readInitParams();   
     void readV4lParams();     
+    void writeV4lParams();     
     void loopCamera();
     void showCameraImage();
+	std::string queueLoadConfiguration_;
+	std::string queueSaveConfiguration_;
+	int convert_image_first_;
 	
     /**
      * reads and updates all local control values

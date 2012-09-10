@@ -1,13 +1,12 @@
 <package>
   <description brief="luvc">
-
-     logitech camera driver, based on the luvcview package by Laurent Pinchart and  Michel Xhaard 
-
+     v4l camera driver, based on the luvcview package. This package detects the supported contros of your usb camera and generates a dynamic reconfigure interface.
+	 The control parmeters like brigthness, ... can be saved and loaded during runtime via the dynamic reconfigure interface.
   </description>
   <author>Markus Bader</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/logitech_sphere</url>
+  <url>http://ros.org/wiki/v4r_cam</url>
   <depend package="roscpp"/>
   <depend package="driver_base" />
   <depend package="opencv2"/>

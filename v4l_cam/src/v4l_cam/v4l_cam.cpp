@@ -71,12 +71,16 @@ V4LCam::V4LCam()
     , width_(DEFAULT_WIDTH)
     , height_(DEFAULT_HEIGHT)
     , fps_(DEFAULT_FPS)
+    , camera_control_action_(NA)
 {
     mutexImage_.unlock();
 }
 
-V4LCam::FD V4LCam::initCamera()
+V4LCam::FD V4LCam::initCamera(const std::string &videoDevice)
 {
+    if(!videoDevice.empty()) {
+        videoDevice_ = videoDevice;
+    }
     pVideoIn_ = (struct vdIn *) calloc(1, sizeof(struct vdIn));
     if(init_videoIn(pVideoIn_, (char *) videoDevice_.c_str(), width_, height_, fps_, format_, grabmethod_, (char *) aviFilename_.c_str()) < 0)
         exit(1);
@@ -159,6 +163,7 @@ int V4LCam::v4lget(ControlEntryPtr entry)
         entry->error_msg <<  "v4l2_ioctl get control error\n";
         return ERROR;
     }
+    entry->currentValue = control.value;
     boost::this_thread::sleep(boost::posix_time::milliseconds(10));
     entry->info_msg << "current = " << entry->currentValue << "\n";
     return OK;
@@ -233,108 +238,6 @@ int V4LCam::v4lupdate(ControlEntryPtr entry)
     return OK;
 }
 
-void V4LCam::save_controls()
-{
-    v4l2_queryctrl queryctrl;
-    v4l2_control   control_s;
-    FILE *configfile;
-    memset(&queryctrl, 0, sizeof(queryctrl));
-    memset(&control_s, 0, sizeof(control_s));
-    configfile = fopen("luvcview.cfg", "w");
-    if(configfile == NULL) {
-        perror("saving configfile luvcview.cfg failed");
-    } else {
-        fprintf(configfile, "id         value      # luvcview control settings configuration file\n");
-        fprintf(configfile, "V4L2_CID_BASE 0x%08X - 0x%08X\n", V4L2_CID_BASE, V4L2_CID_LASTP1);
-        for(queryctrl.id = V4L2_CID_BASE;
-                queryctrl.id < V4L2_CID_LASTP1;
-                queryctrl.id++) {
-            if(0 == ioctl(pVideoIn_->fd, VIDIOC_QUERYCTRL, &queryctrl)) {
-
-                // info_msg_ << queryctrl.id << " = " << queryctrl.name << "\n";
-                if(queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
-                    continue;
-                control_s.id = queryctrl.id;
-                v4l2_ioctl(pVideoIn_->fd, VIDIOC_G_CTRL, &control_s);
-                boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-                fprintf(configfile, "%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
-                        queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
-                        queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-                printf("%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
-                       queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
-                       queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-                boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-            }
-        }
-        fprintf(configfile, "V4L2_CID_CAMERA_CLASS_BASE 0x%08X - 0x%08X\n", V4L2_CID_CAMERA_CLASS_BASE, V4L2_CID_CAMERA_CLASS_BASE + 20);
-        for(queryctrl.id = V4L2_CID_CAMERA_CLASS_BASE;
-                queryctrl.id < V4L2_CID_CAMERA_CLASS_BASE + 20;
-                queryctrl.id++) {
-            if(0 == ioctl(pVideoIn_->fd, VIDIOC_QUERYCTRL, &queryctrl)) {
-                if(queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
-                    continue;
-                control_s.id = queryctrl.id;
-                v4l2_ioctl(pVideoIn_->fd, VIDIOC_G_CTRL, &control_s);
-                boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-                fprintf(configfile, "%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
-                        queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
-                        queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-                printf("%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
-                       queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
-                       queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-                boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-            }
-        }
-        fprintf(configfile, "V4L2_CID_PRIVATE_BASE 0x%08X\n", V4L2_CID_PRIVATE_BASE);
-        for(queryctrl.id = V4L2_CID_PRIVATE_BASE;;
-                queryctrl.id++) {
-            if(0 == ioctl(pVideoIn_->fd, VIDIOC_QUERYCTRL, &queryctrl)) {
-                if(queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
-                    continue;
-                if((queryctrl.id == 134217735) || (queryctrl.id == 134217736))
-                    continue;
-                control_s.id = queryctrl.id;
-                v4l2_ioctl(pVideoIn_->fd, VIDIOC_G_CTRL, &control_s);
-                boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-                fprintf(configfile, "%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
-                        queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
-                        queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-                printf("%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
-                       queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
-                       queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-            } else {
-                if(errno == EINVAL)
-                    break;
-            }
-        }
-        fprintf(configfile, "V4L2_CID_BASE_LOGITECH 0x%08X\n", V4L2_CID_BASE_LOGITECH);
-        for(queryctrl.id = V4L2_CID_BASE_LOGITECH;
-                queryctrl.id < V4L2_CID_BASE_LOGITECH + 20;
-                queryctrl.id++) {
-            if(0 == ioctl(pVideoIn_->fd, VIDIOC_QUERYCTRL, &queryctrl)) {
-                if(queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
-                    continue;
-                if((queryctrl.id == 134217735) || (queryctrl.id == 134217736))
-                    continue;
-                control_s.id = queryctrl.id;
-                v4l2_ioctl(pVideoIn_->fd, VIDIOC_G_CTRL, &control_s);
-                boost::this_thread::sleep(boost::posix_time::milliseconds(10));
-                fprintf(configfile, "%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
-                        queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
-                        queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-                printf("%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
-                       queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
-                       queryctrl.maximum, queryctrl.step, queryctrl.default_value);
-            } else {
-                if(errno == EINVAL)
-                    break;
-            }
-        }
-        fflush(configfile);
-        fclose(configfile);
-        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    }
-}
 V4LCam::ControlEntry::ControlEntry(int id)
     : valid(true)
     , varName("NA")
@@ -415,7 +318,27 @@ bool V4LCam::ControlEntry::hasInfoMsg() const
     return !info_msg.str().empty();
 };
 
-std::vector<V4LCam::ControlEntryPtr > &V4LCam::detectControlEnties()
+std::string V4LCam::pullErrorMsg()
+{
+    std::string str = error_msg_.str();
+    error_msg_.str(std::string());
+    return str;
+}
+std::string V4LCam::pullInfoMsg()
+{
+    std::string str = info_msg_.str();
+    info_msg_.str(std::string());
+    return str;
+}
+bool V4LCam::hasErrorMsg() const
+{
+    return !error_msg_.str().empty();
+};
+bool V4LCam::hasInfoMsg() const
+{
+    return !info_msg_.str().empty();
+};
+const std::vector<V4LCam::ControlEntryPtr > &V4LCam::detectControlEnties()
 {
     v4l2_queryctrl queryctrl;
 
@@ -448,5 +371,68 @@ std::vector<V4LCam::ControlEntryPtr > &V4LCam::detectControlEnties()
         v4lgetInfo(controlEntries_[i]);
     }
     return controlEntries_;
+}
+
+
+int V4LCam::save_controls(const std::string &filename)
+{
+    struct v4l2_queryctrl queryctrl;
+    struct v4l2_control   control_s;
+    FILE *configfile;
+    memset(&queryctrl, 0, sizeof(queryctrl));
+    memset(&control_s, 0, sizeof(control_s));
+    configfile = fopen(filename.c_str(), "w");
+    if(configfile == NULL) {
+        error_msg_ << "saving configfile: " << filename << " failed" << std::endl;
+    } else {
+        fprintf(configfile, "id         value      # luvcview control settings configuration file\n");
+        for(std::vector<V4LCam::ControlEntryPtr>::const_iterator it = controlEntries_.begin(); it != controlEntries_.end(); it++) {
+            queryctrl.id = (*it)->queryctrl->id;
+            if(0 == ioctl(pVideoIn_->fd, VIDIOC_QUERYCTRL, &queryctrl)) {
+                if(queryctrl.flags & V4L2_CTRL_FLAG_DISABLED)
+                    continue;
+                control_s.id = queryctrl.id;
+                v4l2_ioctl(pVideoIn_->fd, VIDIOC_G_CTRL, &control_s);
+                boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+                fprintf(configfile, "%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
+                        queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
+                        queryctrl.maximum, queryctrl.step, queryctrl.default_value);
+                printf("%-10d %-10d # name:%-32s type:%d min:%-5d max:%-5d step:%-5d def:%d\n",
+                       queryctrl.id, control_s.value, queryctrl.name, queryctrl.type, queryctrl.minimum,
+                       queryctrl.maximum, queryctrl.step, queryctrl.default_value);
+                boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+            }
+        }
+        fflush(configfile);
+        fclose(configfile);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        info_msg_ << "saved configfile: " << filename << std::endl;
+    }
+    return OK;
+}
+
+int V4LCam::load_controls(const std::string &filename)//struct vdIn *vd)
+{
+    struct v4l2_control   control;
+    FILE *configfile;
+    memset(&control, 0, sizeof(control));
+    configfile = fopen(filename.c_str(), "r");
+    if(configfile == NULL) {
+        error_msg_ << "configfile: " << filename << " open failed" << std::endl;
+    } else {
+        info_msg_ << "loading controls from luvcview.cfg\n";
+        char buffer[0xFFF];
+        fgets(buffer, sizeof(buffer), configfile);
+        while(NULL != fgets(buffer, sizeof(buffer), configfile)) {
+            sscanf(buffer, "%i%i", &control.id, &control.value);
+            if(v4l2_ioctl(pVideoIn_->fd, VIDIOC_S_CTRL, &control))
+                info_msg_ << "ERROR id: " << control.id << " val: " <<  control.value << std::endl;
+            else
+                info_msg_ << "OK    id: " << control.id << " val: " <<  control.value << std::endl;
+            boost::this_thread::sleep(boost::posix_time::milliseconds(20));
+        }
+        fclose(configfile);
+        info_msg_ << "loaded configfile: " << filename << std::endl;
+    }
 }
 

@@ -965,6 +965,20 @@ inline static void idct(int *in, int *out, int *quant, long off, int max)
 /* translate YUV422Packed to rgb24 */
 
 unsigned int
+Pyuv422togray8(unsigned char * input_ptr, unsigned char * output_ptr, unsigned int image_width, unsigned int image_height)
+{
+	unsigned int i, size;
+	unsigned char *buff = input_ptr;
+	unsigned char *output_pt = output_ptr;
+	size = image_width * image_height;
+	for (i = size; i > 0; i--) {
+		buff += 2;
+		*output_pt++ = *buff;
+	}
+	
+	return FOUR_TWO_TWO;
+} 
+unsigned int
 Pyuv422torgb24(unsigned char * input_ptr, unsigned char * output_ptr, unsigned int image_width, unsigned int image_height)
 {
 	unsigned int i, size;

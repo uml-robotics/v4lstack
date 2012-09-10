@@ -30,6 +30,7 @@ typedef boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex
 extern "C" {
     unsigned int Pyuv422torgb24(unsigned char *input_ptr, unsigned char *output_ptr, unsigned int image_width, unsigned int image_height);
     unsigned int Pyuv422tobgr24(unsigned char *input_ptr, unsigned char *output_ptr, unsigned int image_width, unsigned int image_height);
+    unsigned int Pyuv422togray8(unsigned char *input_ptr, unsigned char *output_ptr, unsigned int image_width, unsigned int image_height);
 }
 
 
@@ -41,11 +42,28 @@ int main(int argc, char **argv)
     V4RCamNode v4r_cam(n);
     ros::Rate rate(100);
     while(ros::ok() && v4r_cam.grab()) {
+        v4r_cam.processQueue();
         v4r_cam.publishCamera();
         ros::spinOnce();
         rate.sleep();
     }
     return 0;
+}
+
+void V4RCamNode::processQueue()
+{
+    if(!queueLoadConfiguration_.empty()) {
+        load_controls(queueLoadConfiguration_);
+        if(hasInfoMsg()) ROS_INFO_STREAM(pullInfoMsg());
+        if(hasErrorMsg()) ROS_ERROR_STREAM(pullErrorMsg());
+        writeV4lParams();
+        queueLoadConfiguration_ = std::string();
+    } else if(!queueSaveConfiguration_.empty()) {
+        save_controls(queueSaveConfiguration_);
+        if(hasInfoMsg()) ROS_INFO_STREAM(pullInfoMsg());
+        if(hasErrorMsg()) ROS_ERROR_STREAM(pullErrorMsg());
+        queueLoadConfiguration_ = std::string();
+    }
 }
 
 void V4RCamNode::callbackParameters(v4l_cam::CameraParametersConfig &config, uint32_t level)
@@ -55,9 +73,19 @@ void V4RCamNode::callbackParameters(v4l_cam::CameraParametersConfig &config, uin
         if(config.show_camera_image) {
             showCameraImageThread_ = boost::thread(&V4RCamNode::showCameraImage, this);
             ROS_INFO("start show camera image thread");
-        } 
+        }
         show_camera_image_ = config.show_camera_image;
     }
+    if(camera_control_action_ != config.camera_control_action) {
+        if(config.camera_control_action == LOAD) {
+            queueLoadConfiguration_ = config.camera_parameters_file;
+        }
+        if(config.camera_control_action == SAVE) {
+            queueSaveConfiguration_ = config.camera_parameters_file;
+        }
+        camera_control_action_ = config.camera_control_action;
+    }
+    convert_image_first_ = config.convert_image_first;
 }
 
 V4RCamNode::~V4RCamNode()
@@ -67,7 +95,7 @@ V4RCamNode::~V4RCamNode()
 }
 
 V4RCamNode::V4RCamNode(ros::NodeHandle &n)
-    : n_(n), n_param_("~"), imageTransport_(n_), generate_dynamic_reconfigure_(false), show_camera_image_(false)
+    : n_(n), n_param_("~"), imageTransport_(n_param_), generate_dynamic_reconfigure_(false), show_camera_image_(false), queueLoadConfiguration_(""), queueSaveConfiguration_("")
 {
     cameraPublisher_ = imageTransport_.advertiseCamera("image_raw", 1);
     readInitParams();
@@ -100,6 +128,21 @@ void V4RCamNode::readV4lParams()
         if(controlEntries_[i]->hasInfoMsg()) ROS_INFO_STREAM(controlEntries_[i]->varName << ": " << controlEntries_[i]->pullInfoMsg());
     }
 }
+void V4RCamNode::writeV4lParams()
+{
+    for(unsigned int  i = 0; i < controlEntries_.size(); i++) {
+        v4lget(controlEntries_[i]);
+        if(controlEntries_[i]->queryctrl->type == V4L2_CTRL_TYPE_BOOLEAN) {
+            n_param_.setParam(controlEntries_[i]->varName, (bool) controlEntries_[i]->currentValue);
+            std::cout << controlEntries_[i]->varName << ": bool " << controlEntries_[i]->currentValue << std::endl;
+        } else {
+            n_param_.setParam(controlEntries_[i]->varName, (int) controlEntries_[i]->currentValue);
+            std::cout << controlEntries_[i]->varName << ": int  " << controlEntries_[i]->currentValue << std::endl;
+        }
+        if(controlEntries_[i]->hasErrorMsg()) ROS_ERROR_STREAM(controlEntries_[i]->varName << ": " << controlEntries_[i]->pullErrorMsg());
+        if(controlEntries_[i]->hasInfoMsg()) ROS_INFO_STREAM(controlEntries_[i]->varName << ": " << controlEntries_[i]->pullInfoMsg());
+    }
+}
 void V4RCamNode::readInitParams()
 {
     ROS_INFO("V4RCamNode::readParams()");
@@ -111,6 +154,10 @@ void V4RCamNode::readInitParams()
     ROS_INFO("video_device: %s", videoDevice_.c_str());
     n_param_.param<std::string>("avi_filename", aviFilename_, DEFAULT_AVIFILENAME);
     ROS_INFO("avi_filename: %s", aviFilename_.c_str());
+    n_param_.param<std::string>("camera_parameters_file", queueLoadConfiguration_, "");
+    ROS_INFO("camera_parameters_file: %s", queueLoadConfiguration_.c_str());
+    n_param_.param<int>("convert_image_first", convert_image_first_, DEFAULT_CONVERT_IMAGE_FIRST);
+    ROS_INFO("convert_image_first: %i", convert_image_first_);
 
     std::string camera_info_url;
     if(n_param_.getParam("camera_info_url", camera_info_url)) {
@@ -166,13 +213,34 @@ void V4RCamNode::publishCamera()
     cameraImage_.header = cameraInfo_.header;
     cameraImage_.height = cameraInfo_.height = height_;
     cameraImage_.width = cameraInfo_.width = width_;
-    cameraImage_.encoding = "rgb8";
-    cameraImage_.encoding = "yuv422";
     cameraImage_.is_bigendian = true;
     cameraImage_.step = cameraInfo_.width * 2;
-    cameraImage_.data.resize(width_ * height_ * 2);
-    memcpy(&cameraImage_.data[0], pVideoIn_->framebuffer, cameraImage_.data.size());
-    //Pyuv422torgb24(pVideoIn_->framebuffer, &cameraImage_.data[0], width_, height_);
+    switch(convert_image_first_) {
+    case CONVERT_RAW:
+        cameraImage_.encoding = "yuv422";
+        cameraImage_.data.resize(width_ * height_ * 2);
+        memcpy(&cameraImage_.data[0], pVideoIn_->framebuffer, cameraImage_.data.size());
+        break;
+    case CONVERT_YUV422toRGB:
+        cameraImage_.encoding = "rgb8";
+        cameraImage_.data.resize(width_ * height_ * 3);
+        Pyuv422torgb24(pVideoIn_->framebuffer, &cameraImage_.data[0], width_, height_);
+        break;
+    case CONVERT_YUV422toBGR:
+        cameraImage_.encoding = "bgr8";
+        cameraImage_.data.resize(width_ * height_ * 3);
+        Pyuv422tobgr24(pVideoIn_->framebuffer, &cameraImage_.data[0], width_, height_);
+        break;
+    case CONVERT_YUV422toGray:
+        cameraImage_.encoding = "mono8";
+        cameraImage_.data.resize(width_ * height_);
+        Pyuv422togray8(pVideoIn_->framebuffer, &cameraImage_.data[0], width_, height_);
+        break;
+    default:
+        cameraImage_.encoding = "yuv422";
+        cameraImage_.data.resize(width_ * height_ * 2);
+        memcpy(&cameraImage_.data[0], pVideoIn_->framebuffer, cameraImage_.data.size());  
+    }
     cameraPublisher_.publish(cameraImage_, cameraInfo_);
 }
 
@@ -182,7 +250,7 @@ void V4RCamNode::showCameraImage()
     timeval lastShownFrame = timeLastFrame_;
     double lastDuration = durationLastFrame_;
     cv::Mat img;
-	int key = -1;
+    int key = -1;
     do {
         if((lastShownFrame.tv_sec != timeLastFrame_.tv_sec) || (lastShownFrame.tv_usec != timeLastFrame_.tv_usec)) {
             img.create(height_, width_, CV_8UC3);
@@ -198,8 +266,8 @@ void V4RCamNode::showCameraImage()
         key =  cv::waitKey(50);
     } while((key == -1) && show_camera_image_);
     cv::destroyWindow("Camera");
-	cv::waitKey(10);
-	if(key != -1) {
-	  pVideoIn_->signalquit = 0; 
-	}
+    cv::waitKey(10);
+    if(key != -1) {
+        pVideoIn_->signalquit = 0;
+    }
 }

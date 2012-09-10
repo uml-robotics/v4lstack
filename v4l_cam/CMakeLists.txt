@@ -48,7 +48,8 @@ target_link_libraries(uvc m SDL v4l2)
 
 rosbuild_add_executable(update_dynamic_reconfigure src/v4l_cam/v4l_cam.cpp src/update_dynamic_reconfigure.cpp)
 target_link_libraries(update_dynamic_reconfigure m v4l2 uvc)
+rosbuild_link_boost(update_dynamic_reconfigure program_options)
 
-rosbuild_add_executable(v4r_cam src/v4l_cam/v4l_cam_node.cpp src/v4l_cam/v4l_cam.cpp src/v4l_cam/generate_dynamic_reconfigure.cpp)
+rosbuild_add_executable(v4r_cam src/v4l_cam/v4l_cam_node.cpp src/v4l_cam/v4l_cam.cpp)
 target_link_libraries(v4r_cam m v4l2 uvc)
-rosbuild_link_boost(v4r_cam thread signals system)
+rosbuild_link_boost(v4r_cam thread signals)

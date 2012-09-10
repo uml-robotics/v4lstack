@@ -39,7 +39,10 @@ class V4LCam
 public:
     static const int OK = 0;
     static const int ERROR = 1;
-	typedef int FD;
+    static const int NA = 0;
+    static const int LOAD = 1;
+    static const int SAVE = 2;
+    typedef int FD;
     typedef boost::shared_ptr<v4l2_control> v4l2_controlPtr;
     class ControlEntry
     {
@@ -76,11 +79,17 @@ protected:
     float fps_;
     timeval timeLastFrame_;
     double durationLastFrame_;
+    int camera_control_action_;
     boost::interprocess::interprocess_mutex mutexImage_;
     std::vector<ControlEntryPtr > controlEntries_;
-	
+
 public:
-    FD initCamera();
+    /**
+     * Initializedes a video device
+     * @param videoDevice like /dev/video0
+     * @return fd to the video device (integer) usabel for v4l2_ioctl calles
+     **/
+    FD initCamera(const std::string &videoDevice = "");
 
     /// v4lcontrols
 
@@ -121,11 +130,46 @@ public:
      **/
     bool isBlackListed(int control);
 
-    std::vector<ControlEntryPtr > &detectControlEnties();
-    void save_controls();
+    /**
+     * detects the supporting v4l controls of the device
+     * @returns controls
+     **/
+    const std::vector<ControlEntryPtr > &detectControlEnties();
+    /**
+     * saves control entries to a file
+     * @return error >= 1, ok = 0 details are written into info_msg_ and entry.error_msg_
+     * @see pullErrorMsg pullInfoMsg hasErrorMsg hasInfoMsg
+     **/
+    int save_controls(const std::string &filename);
+
+    /**
+     * loads control entries to a file
+     * @return error >= 1, ok = 0 details are written into info_msg_ and entry.error_msg_
+     * @see pullErrorMsg pullInfoMsg hasErrorMsg hasInfoMsg
+     **/
+    int load_controls(const std::string &filename);
 
 
     static char removeNonAlNum(char in);
+    /**
+     * @returns error messages
+     **/
+    std::string pullErrorMsg() ;
+    /**
+     * @returns info messages
+     **/
+    std::string pullInfoMsg() ;
+    /**
+     * @returns to if there are whaiting error messages
+     **/
+    bool hasErrorMsg() const;
+    /**
+     * @returns to if there are whaiting info messages
+     **/
+    bool hasInfoMsg() const;
+protected:
+    std::stringstream info_msg_;
+    std::stringstream error_msg_;
 };
 
 #endif // V4R_CAM_H
