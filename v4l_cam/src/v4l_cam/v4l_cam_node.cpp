@@ -37,7 +37,7 @@ extern "C" {
 int main(int argc, char **argv)
 {
 
-    ros::init(argc, argv, "v4r_cam");
+    ros::init(argc, argv, "v4l_cam");
     ros::NodeHandle n;
     V4RCamNode v4r_cam(n);
     ros::Rate rate(100);
